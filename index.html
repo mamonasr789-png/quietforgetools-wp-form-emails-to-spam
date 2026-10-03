@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WordPress Contact Form Emails Going to Spam? What to Check | QuietForgeTools</title>
+  <meta name="description" content="Form works and the email arrives, but it lands in spam or junk. Check From/sender config, Reply-To vs From, site-domain alignment, SMTP, SPF/DKIM/DMARC concepts, quarantine, and multi-mailbox tests — free QuietForgeTools guide." />
+  <link rel="canonical" href="https://mamonasr789-png.github.io/quietforgetools-wp-form-emails-to-spam/" />
+  <meta name="robots" content="index,follow" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="brand"><a href="https://mamonasr789-png.github.io/quietforgetools/"><span>QuietForgeTools</span></a> · Free diagnostic guide</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap hero">
+      <div class="free-chip">Free guide · DIY first · no uploads</div>
+      <h1>WordPress Contact Form Emails Going to Spam? What to Check</h1>
+      <p class="lead">
+        The form submits successfully. The notification email is generated and reaches the mail system —
+        but it lands in Spam, Junk, or quarantine instead of the inbox. This page focuses on that exact
+        symptom, not “form not sending” or “email never arrives at all.”
+      </p>
+      <div class="callout callout-accent" role="note">
+        <strong>Wrong symptom?</strong>
+        If the form never completes or shows errors, use
+        <a href="https://mamonasr789-png.github.io/quietforgetools-wp-contact-form-not-sending/">WordPress contact form not sending emails</a>.
+        If the UI says sent but you cannot find the message even in spam/junk, use
+        <a href="https://mamonasr789-png.github.io/quietforgetools-wp-form-sent-no-email/">form says sent but no email arrives</a>
+        first — then return here once placement in spam is confirmed.
+      </div>
+    </div>
+
+    <nav class="wrap toc" aria-label="On this page">
+      <h2 class="toc-title">On this page</h2>
+      <ol>
+        <li><a href="#verify-spam">Verify spam/junk is the failure</a></li>
+        <li><a href="#from-sender">From / sender configuration</a></li>
+        <li><a href="#site-domain-from">Site domain vs unrelated From</a></li>
+        <li><a href="#reply-to-vs-from">Reply-To versus From</a></li>
+        <li><a href="#practical-smtp">Practical SMTP configuration</a></li>
+        <li><a href="#spf-dkim-dmarc">SPF / DKIM / DMARC as diagnostics</a></li>
+        <li><a href="#recipient-quarantine">Recipient spam and quarantine</a></li>
+        <li><a href="#multi-mailbox">Multi-mailbox testing</a></li>
+        <li><a href="#logging-evidence">Logging and evidence to keep</a></li>
+        <li><a href="#when-escalate">When to escalate beyond a simple fix</a></li>
+      </ol>
+    </nav>
+
+    <section id="verify-spam" aria-labelledby="h-verify">
+      <div class="wrap">
+        <h2 id="h-verify">1. Verify that spam placement is actually the failure</h2>
+        <p>Confirm the message exists and was filtered — not missing, not undelivered.</p>
+        <ul>
+          <li>Search the recipient mailbox for a unique phrase you put in a test submission.</li>
+          <li>Open Spam / Junk folders (and “All Mail” / “Clutter” views where the provider has them).</li>
+          <li>Check provider quarantine (Google Workspace Admin, Microsoft 365 quarantine, host spam dashboard).</li>
+          <li>If you still find nothing in inbox <em>or</em> spam/quarantine, treat it as missing mail — use the
+            <a href="https://mamonasr789-png.github.io/quietforgetools-wp-form-sent-no-email/">sent but no email</a>
+            guide before changing spam-related settings.</li>
+          <li>Note the exact folder/label and any “phishing / spoof / failed authentication” banners on the message.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="from-sender" aria-labelledby="h-from">
+      <div class="wrap">
+        <h2 id="h-from">2. Check From / sender address configuration</h2>
+        <p>Spam filters weigh who appears to send the mail as heavily as what the form does.</p>
+        <ul>
+          <li>Open the form’s Mail / Notification settings and copy the From name and From email exactly.</li>
+          <li>Prefer a real mailbox you control on a domain related to the site (not a random free-mail From).</li>
+          <li>Avoid empty From, invalid addresses, or placeholders left after a migration.</li>
+          <li>Compare From with Settings → General → Administration Email Address — mismatch is common and worth noting.</li>
+          <li>If the From address cannot receive bounces, you will miss delivery-rejection feedback.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="site-domain-from" aria-labelledby="h-site-from">
+      <div class="wrap">
+        <h2 id="h-site-from">3. Site domain versus an unrelated From address</h2>
+        <p>Sending as an address on a domain you do not control often triggers spam or spoof warnings.</p>
+        <ul>
+          <li>If the site is <code>example.com</code>, a From like <code>noreply@example.com</code> or a staff mailbox on that domain is usually clearer than a visitor’s Gmail as From.</li>
+          <li>Using the visitor’s personal email as From (common Contact Form 7 pattern) frequently causes spam placement or rejection — even when the form “succeeds.”</li>
+          <li>Hosting that forces mail through its own relays may rewrite or reject mismatched From addresses.</li>
+          <li>Record: site hostname, From domain, and whether they match. Misalignment is a diagnostic signal, not a guarantee of spam.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="reply-to-vs-from" aria-labelledby="h-reply">
+      <div class="wrap">
+        <h2 id="h-reply">4. Reply-To versus From — keep them distinct on purpose</h2>
+        <p>You can let staff reply to the visitor without pretending the visitor sent the mail.</p>
+        <ul>
+          <li>Set From to a domain you control; set Reply-To to the visitor’s submitted email (or a staff alias).</li>
+          <li>Confirm the form plugin supports separate From and Reply-To fields (or mail-tags) and that both are populated.</li>
+          <li>Test a reply from the notification message — it should go to Reply-To, not only bounce to From.</li>
+          <li>Do not “fix spam” by putting the visitor in From; that often worsens filtering.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="practical-smtp" aria-labelledby="h-smtp">
+      <div class="wrap">
+        <h2 id="h-smtp">5. Practical SMTP configuration (high level)</h2>
+        <p>Authenticated SMTP usually improves deliverability versus raw PHP <code>mail()</code>, but it is not magic.</p>
+        <ul>
+          <li>Confirm whether the site uses an SMTP plugin / transactional API or only PHP mail.</li>
+          <li>If SMTP is configured: correct host, port, encryption (TLS/SSL), and credentials; run the plugin’s own test to the same spam-hitting recipient.</li>
+          <li>Prefer sending through a provider that matches the From domain’s expected relay where practical.</li>
+          <li>Watch for rate limits, “send as” restrictions, and shared-IP reputation on cheap shared hosts.</li>
+          <li>Changing SMTP alone does not guarantee inbox placement — retest spam folders after each change.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="spf-dkim-dmarc" aria-labelledby="h-auth">
+      <div class="wrap">
+        <h2 id="h-auth">6. SPF, DKIM, and DMARC as diagnostic concepts</h2>
+        <p>These are authentication signals. They help filters decide trust — they do not promise inbox delivery.</p>
+        <ul>
+          <li><strong>SPF:</strong> which servers may send for the From domain. If your SMTP host is missing from SPF, receivers may mark fail/softfail.</li>
+          <li><strong>DKIM:</strong> cryptographic signature on the message. Broken or unsigned mail is a common spam factor.</li>
+          <li><strong>DMARC:</strong> policy for what to do when SPF/DKIM fail (none / quarantine / reject). Quarantine policies can explain “in spam.”</li>
+          <li>Use provider “show original” / message headers to see Authentication-Results (pass/fail/neutral).</li>
+          <li>Do not claim that fixing one DNS record will stop spam. Treat auth failures as high-priority diagnostics among others.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="recipient-quarantine" aria-labelledby="h-quarantine">
+      <div class="wrap">
+        <h2 id="h-quarantine">7. Recipient-side spam filters and quarantine</h2>
+        <p>Sometimes the site sends correctly and the recipient’s filter is the bottleneck.</p>
+        <ul>
+          <li>Ask the recipient (or check admin consoles) for spam rules, blocked senders, and quarantine releases.</li>
+          <li>Corporate Microsoft 365 / Google Workspace often quarantine first-time form mail from new domains.</li>
+          <li>Consumer Gmail/Outlook: mark Not spam once, then retest — still record whether later messages stay in inbox.</li>
+          <li>Subject lines with urgency, ALL CAPS, or heavy marketing phrasing can worsen filtering even for legitimate enquiries.</li>
+          <li>If only one company inbox filters and others do not, bias toward that recipient’s policy — not a site-wide “form broken” rewrite.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="multi-mailbox" aria-labelledby="h-multi">
+      <div class="wrap">
+        <h2 id="h-multi">8. Controlled testing with more than one mailbox</h2>
+        <p>One mailbox is anecdote; two or three reduce guesswork.</p>
+        <ul>
+          <li>Submit identical tests to: (a) the production recipient, (b) a mailbox you control on a different provider, (c) optionally a same-domain staff address.</li>
+          <li>Use a unique phrase per test. Check inbox and spam within a few minutes for each.</li>
+          <li>Pattern A: all land in spam → bias toward From/SMTP/auth/reputation.</li>
+          <li>Pattern B: only production recipient spam → bias toward that mailbox’s filters/quarantine.</li>
+          <li>Pattern C: none appear anywhere → leave this guide; follow
+            <a href="https://mamonasr789-png.github.io/quietforgetools-wp-form-sent-no-email/">sent but no email</a>.</li>
+          <li>Restore production recipients after tests; do not leave personal inboxes as live To addresses.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="logging-evidence" aria-labelledby="h-evidence">
+      <div class="wrap">
+        <h2 id="h-evidence">9. Logging and evidence to retain</h2>
+        <p>A short evidence pack beats vague “it’s always spam.”</p>
+        <ul>
+          <li>Date/time with timezone, form URL, unique body phrase, From / Reply-To / To as configured.</li>
+          <li>Where the message was found (inbox / spam / quarantine / not found) for each test mailbox.</li>
+          <li>Header snippet: Authentication-Results, Received chain, any spam score if shown.</li>
+          <li>SMTP/plugin log line showing accept/reject for that attempt.</li>
+          <li>One change between tests — then retest the same phrase pattern.</li>
+        </ul>
+        <p>
+          Tip: mark the same items on the
+          <a href="https://mamonasr789-png.github.io/quietforgetools-wp-enquiry-checklist/">free Enquiry Path Checklist</a>
+          so you can hand a clear summary to a developer or host.
+        </p>
+      </div>
+    </section>
+
+    <section id="when-escalate" aria-labelledby="h-escalate">
+      <div class="wrap">
+        <h2 id="h-escalate">10. When the symptom points beyond a simple isolated fix</h2>
+        <p>
+          A single wrong From, missing Reply-To, or one spam-folder false positive is often an isolated fix.
+          Treat it as a wider enquiry-path problem when several of these hold:
+        </p>
+        <ul>
+          <li>Spam placement is inconsistent across recipients, days, or form variants.</li>
+          <li>SMTP, DNS (SPF/DKIM/DMARC), and plugin notification templates all need coordinated changes.</li>
+          <li>Reputation / shared IP / branding issues sit outside one form setting.</li>
+          <li>You cannot reproduce reliably enough to verify one change.</li>
+        </ul>
+        <p>
+          Isolated, reproducible “arrives in spam” with a clear single fault → short fix territory.
+          Multi-step / inconsistent delivery across the whole enquiry path → map and repair the path, not one random toggle.
+          This guide does not claim any sequence will stop emails going to spam.
+        </p>
+      </div>
+    </section>
+
+    <section id="next" aria-labelledby="h-next">
+      <div class="wrap">
+        <h2 id="h-next">If you want help fixing it</h2>
+        <p class="section-lead">
+          This guide and the free checklist are complete on their own. Use a paid option only if you prefer
+          bounded help after you’ve narrowed the failure — not as a required next step.
+        </p>
+        <div class="grid services">
+          <a class="card service" href="https://mamonasr789-png.github.io/quietforgetools-wp-enquiry-checklist/">
+            <div class="tag">Free · DIY</div>
+            <h3>Enquiry Path Checklist</h3>
+            <p>Mark form, email, mobile, and delivery checks yourself; copy a diagnostic summary. Nothing uploaded.</p>
+          </a>
+          <a class="card service" href="https://mamonasr789-png.github.io/quietforgetools-wp-maintenance/quick-fix/">
+            <div class="tag">Isolated / simple failure</div>
+            <h3>£49 WordPress Quick Fix</h3>
+            <p>One agreed problem: diagnosis, one fix attempt, verification, completion note.</p>
+          </a>
+          <a class="card service" href="https://mamonasr789-png.github.io/quietforgetools-enquiry-repair/">
+            <div class="tag">Multi-step enquiry path</div>
+            <h3>£149 Enquiry Path Repair</h3>
+            <p>One clearly defined broken enquiry, contact, or quote path — implement + test.</p>
+          </a>
+        </div>
+        <p class="hint">
+          Related diagnostics:
+          <a href="https://mamonasr789-png.github.io/quietforgetools-wp-contact-form-not-sending/">form not sending (broad)</a>
+          ·
+          <a href="https://mamonasr789-png.github.io/quietforgetools-wp-form-sent-no-email/">says sent, no email</a>
+          · Catalogue:
+          <a href="https://mamonasr789-png.github.io/quietforgetools/">QuietForgeTools hub</a>.
+          No private payment links on this page.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p><a href="https://mamonasr789-png.github.io/quietforgetools/">QuietForgeTools</a> · WordPress form emails going to spam · free</p>
+      <p class="foot-note">
+        Related:
+        <a href="https://mamonasr789-png.github.io/quietforgetools-wp-contact-form-not-sending/">Form not sending (broad)</a>
+        ·
+        <a href="https://mamonasr789-png.github.io/quietforgetools-wp-form-sent-no-email/">Says sent, no email</a>
+        ·
+        <a href="https://mamonasr789-png.github.io/quietforgetools-wp-enquiry-checklist/">Free checklist</a>
+        ·
+        <a href="https://mamonasr789-png.github.io/quietforgetools-wp-maintenance/quick-fix/">Quick Fix (£49)</a>
+        ·
+        <a href="https://mamonasr789-png.github.io/quietforgetools-enquiry-repair/">Enquiry Path Repair (£149)</a>.
+        This guide does not claim every WordPress or email problem has these causes, and does not guarantee inbox placement.
+      </p>
+    </div>
+  </footer>
+</body>
+</html>
